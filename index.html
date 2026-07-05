@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0f1115">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Treino">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<title>Treino do Dia</title>
+<style>
+  :root{
+    --bg:#0f1115; --card:#191c23; --card2:#20242d; --text:#eef1f6; --muted:#9aa3b2;
+    --work:#2ecc71; --short:#3b9dff; --long:#f5a623; --accent:#7c5cff; --ring-bg:#2a2f3a;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0; min-height:100%}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    overscroll-behavior:none;
+  }
+  .wrap{max-width:520px; margin:0 auto; min-height:100dvh; display:flex; flex-direction:column}
+  .screen{display:none; flex:1; flex-direction:column}
+  .screen.active{display:flex}
+  svg{display:block}
+
+  /* ---------- HOME ---------- */
+  header.home-head{padding:22px 18px 8px}
+  header.home-head h1{margin:0; font-size:26px; letter-spacing:.2px}
+  header.home-head p{margin:6px 0 0; color:var(--muted); font-size:14px}
+  .head-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:14px}
+  .streak{display:inline-flex; align-items:center; gap:6px; background:var(--card);
+    border:1px solid #262b35; padding:8px 12px; border-radius:12px; font-size:14px}
+  .streak b{color:var(--work)}
+  .install-btn{display:none; border:1px solid var(--accent); background:#1c1a2e; color:#c0b3ff;
+    padding:8px 12px; border-radius:12px; font-size:13px; font-weight:700; cursor:pointer}
+
+  .days{padding:8px 14px 4px; display:grid; grid-template-columns:repeat(7,1fr); gap:6px}
+  .day{background:var(--card); border:1px solid #262b35; border-radius:12px; padding:9px 0; text-align:center; cursor:pointer; user-select:none}
+  .day small{display:block; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.5px}
+  .day span{display:block; font-size:16px; font-weight:700; margin-top:3px}
+  .day.sel{border-color:var(--accent); background:linear-gradient(180deg,#26224a,#1c2030)}
+  .day.today::after{content:"hoje"; display:block; font-size:9px; color:var(--accent); margin-top:2px; font-weight:700}
+
+  .sel-info{padding:14px 18px 4px}
+  .sel-info h2{margin:0; font-size:20px}
+  .sel-info .meta{color:var(--muted); font-size:13px; margin-top:4px}
+
+  .list{padding:6px 14px 100px; overflow:auto}
+  .item{display:flex; gap:10px; align-items:flex-start; background:var(--card); border:1px solid #23272f; border-radius:12px; padding:11px 12px; margin-bottom:7px}
+  .lead{flex:0 0 34px; display:flex; flex-direction:column; align-items:center; gap:4px}
+  .lead .idx{width:26px; height:22px; border-radius:7px; background:var(--card2); color:var(--muted); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700}
+  .lead .mini{width:32px; height:22px; color:#aeb6c4}
+  .item .body{flex:1; min-width:0}
+  .item .nm{font-size:15px; font-weight:600}
+  .item .ins{font-size:12.5px; color:var(--muted); margin-top:2px; line-height:1.4}
+  .tag{flex:0 0 auto; font-size:10px; padding:3px 7px; border-radius:999px; margin-top:2px; font-weight:700; white-space:nowrap}
+  .t-pernas{background:#123222; color:#5fe39a}
+  .t-quadril{background:#0f2e2e; color:#5fe0d6}
+  .t-core{background:#241a33; color:#c0a3ff}
+  .t-bracos{background:#33240f; color:#f5c069}
+  .t-along{background:#0f2a2f; color:#7fdcc9}
+  .t-aquec{background:#22262f; color:#9aa3b2}
+
+  .cta{position:fixed; left:0; right:0; bottom:0; padding:14px 16px calc(14px + env(safe-area-inset-bottom));
+    background:linear-gradient(180deg,rgba(15,17,21,0),var(--bg) 34%); max-width:520px; margin:0 auto}
+  button.primary{width:100%; border:0; border-radius:14px; padding:16px; font-size:17px; font-weight:700; background:var(--work); color:#052012; cursor:pointer}
+  button.primary:active{transform:translateY(1px)}
+
+  /* ---------- RUN ---------- */
+  #run{padding:14px 18px calc(16px + env(safe-area-inset-bottom))}
+  .run-top{display:flex; justify-content:space-between; align-items:center; color:var(--muted); font-size:13px}
+  .phase-label{text-transform:uppercase; letter-spacing:1.5px; font-weight:800; font-size:15px; text-align:center; margin-top:6px}
+  .ringwrap{position:relative; width:min(66vw,250px); aspect-ratio:1; margin:8px auto 4px}
+  .ringwrap svg.ring{width:100%; height:100%; transform:rotate(-90deg)}
+  .ring-num{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center}
+  .ring-num .big{font-size:58px; font-weight:800; font-variant-numeric:tabular-nums; line-height:1}
+  .ring-num .sub{color:var(--muted); font-size:13px; margin-top:6px}
+  .pos-icon{width:84px; height:52px; margin:4px auto 0; color:var(--text)}
+  .pos-label{text-align:center; color:var(--muted); font-size:12.5px; margin-top:5px; letter-spacing:.3px}
+  .now-name{text-align:center; font-size:23px; font-weight:800; padding:0 8px; margin-top:6px}
+  .now-ins{text-align:center; color:#c3cad6; font-size:14.5px; margin-top:8px; line-height:1.45; padding:0 6px}
+  .next{text-align:center; color:var(--muted); font-size:13px; margin-top:14px}
+  .next b{color:var(--text)}
+  .controls{display:flex; gap:10px; margin-top:18px; padding-top:6px}
+  .controls button{flex:1; border:0; border-radius:14px; padding:15px; font-size:16px; font-weight:700; cursor:pointer}
+  .btn-quit{background:#2a1c1c; color:#ff8f8f}
+  .btn-pause{background:var(--card2); color:var(--text)}
+  .btn-skip{background:var(--card2); color:var(--text)}
+
+  /* ---------- DONE ---------- */
+  #done{align-items:center; justify-content:center; text-align:center; padding:24px}
+  #done .emoji{font-size:64px}
+  #done h1{margin:12px 0 4px; font-size:30px}
+  #done p{color:var(--muted); margin:2px 0}
+  #done .stats{display:flex; gap:12px; margin:22px 0 28px}
+  #done .stat{background:var(--card); border:1px solid #262b35; border-radius:14px; padding:14px 18px; min-width:96px}
+  #done .stat b{display:block; font-size:24px}
+  #done .stat small{color:var(--muted); font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ===================== HOME ===================== -->
+  <section id="home" class="screen active">
+    <header class="home-head">
+      <h1>Treino do Dia</h1>
+      <p>Método sem equipamentos · pernas, tronco, quadril e braços</p>
+      <div class="head-row">
+        <div class="streak">🔥 Sequência: <b id="streakN">0</b>&nbsp;dias</div>
+        <button id="installBtn" class="install-btn">⤓ Instalar app</button>
+      </div>
+    </header>
+    <div class="days" id="days"></div>
+    <div class="sel-info">
+      <h2 id="selTitle">—</h2>
+      <div class="meta" id="selMeta">—</div>
+    </div>
+    <div class="list" id="list"></div>
+    <div class="cta"><button class="primary" id="startBtn">Iniciar treino</button></div>
+  </section>
+
+  <!-- ===================== RUN ===================== -->
+  <section id="run" class="screen">
+    <div class="run-top"><span id="runProgress">1 / 1</span><span id="runSeries">Série</span></div>
+    <div class="phase-label" id="phaseLabel">Preparar</div>
+    <div class="ringwrap">
+      <svg class="ring" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="45" fill="none" stroke="var(--ring-bg)" stroke-width="7"></circle>
+        <circle id="ring" cx="50" cy="50" r="45" fill="none" stroke="var(--work)" stroke-width="7"
+          stroke-linecap="round" stroke-dasharray="282.74" stroke-dashoffset="0"></circle>
+      </svg>
+      <div class="ring-num"><div class="big" id="secs">40</div><div class="sub" id="secsSub">segundos</div></div>
+    </div>
+    <div class="pos-icon" id="posIcon"></div>
+    <div class="pos-label" id="posLabel"></div>
+    <div class="now-name" id="nowName">—</div>
+    <div class="now-ins" id="nowIns">—</div>
+    <div class="next" id="nextEx">Próximo: —</div>
+    <div class="controls">
+      <button class="btn-quit" id="quitBtn">Sair</button>
+      <button class="btn-pause" id="pauseBtn">Pausar</button>
+      <button class="btn-skip" id="skipBtn">Pular ›</button>
+    </div>
+  </section>
+
+  <!-- ===================== DONE ===================== -->
+  <section id="done" class="screen">
+    <div class="emoji">🎉</div>
+    <h1>Parabéns!</h1>
+    <p id="doneMsg">Treino concluído.</p>
+    <div class="stats">
+      <div class="stat"><b id="doneMin">0</b><small>minutos</small></div>
+      <div class="stat"><b id="doneEx">0</b><small>exercícios</small></div>
+      <div class="stat"><b id="doneStreak">0</b><small>🔥 sequência</small></div>
+    </div>
+    <button class="primary" id="homeBtn" style="max-width:280px">Voltar ao início</button>
+  </section>
+
+</div>
+
+<script>
+/* =====================================================================
+   1) TEMPOS  — ajuste aqui se quiser
+   ===================================================================== */
+const WORK = 40;   // segundos de exercício
+const SHORT = 15;  // descanso curto
+const LONG = 30;   // descanso longo (uma vez, no meio da série)
+const READY = 5;   // contagem inicial
+
+/* =====================================================================
+   2) POSIÇÕES DO CORPO  — ícone + rótulo mostrado na tela
+   ===================================================================== */
+const POSLABEL = {
+  pe:"Em pé",
+  costas:"Deitado de costas · barriga para cima",
+  frente:"Deitado de frente · barriga para baixo",
+  prancha:"Apoio no chão · prancha",
+  quadru:"Quatro apoios · mãos e joelhos",
+  pike:"Quatro apoios · quadril elevado",
+  sentado:"Sentado no chão",
+};
+// Pictogramas simples (SVG). Traço = corpo; linha fina embaixo = chão.
+function svgIcon(pos){
+  const S='stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"';
+  const H='fill="currentColor"';
+  const g='<line x1="6" y1="35" x2="58" y2="35" stroke="currentColor" stroke-width="1.4" opacity=".28"/>';
+  const P={
+    pe:`<circle cx="32" cy="8" r="4" ${H}/><line x1="32" y1="12" x2="32" y2="24" ${S}/>
+        <line x1="32" y1="15" x2="24" y2="21" ${S}/><line x1="32" y1="15" x2="40" y2="21" ${S}/>
+        <line x1="32" y1="24" x2="26" y2="34" ${S}/><line x1="32" y1="24" x2="38" y2="34" ${S}/>`,
+    costas:`<circle cx="14" cy="28" r="4" ${H}/><line x1="14" y1="24" x2="14" y2="19" ${S}/>
+        <line x1="18" y1="28" x2="46" y2="28" ${S}/><line x1="46" y1="28" x2="54" y2="28" ${S}/>
+        <line x1="54" y1="28" x2="56" y2="23" ${S}/>`,
+    frente:`<circle cx="14" cy="28" r="4" ${H}/><line x1="14" y1="32" x2="14" y2="35" ${S}/>
+        <line x1="18" y1="28" x2="52" y2="28" ${S}/><line x1="52" y1="28" x2="56" y2="28" ${S}/>
+        <line x1="18" y1="28" x2="10" y2="23" ${S}/>`,
+    prancha:`<circle cx="13" cy="19" r="3" ${H}/><line x1="16" y1="21" x2="50" y2="31" ${S}/>
+        <line x1="18" y1="24" x2="18" y2="33" ${S}/><line x1="50" y1="31" x2="54" y2="34" ${S}/>`,
+    quadru:`<circle cx="14" cy="16" r="3" ${H}/><line x1="16" y1="17" x2="40" y2="17" ${S}/>
+        <line x1="18" y1="18" x2="18" y2="33" ${S}/><line x1="38" y1="18" x2="38" y2="33" ${S}/>`,
+    pike:`<circle cx="18" cy="30" r="3" ${H}/><line x1="34" y1="7" x2="18" y2="33" ${S}/>
+        <line x1="34" y1="7" x2="50" y2="33" ${S}/>`,
+    sentado:`<circle cx="26" cy="10" r="3" ${H}/><line x1="26" y1="13" x2="26" y2="28" ${S}/>
+        <line x1="26" y1="28" x2="46" y2="28" ${S}/><line x1="26" y1="18" x2="34" y2="24" ${S}/>`,
+  };
+  return `<svg viewBox="0 0 64 40" width="100%" height="100%">${g}${P[pos]||P.pe}</svg>`;
+}
+
+/* =====================================================================
+   3) EXERCÍCIOS
+      nm=nome · ins=instrução · g=grupo(cor) · pos=posição do corpo
+      sides:true  -> vira 2 exercícios (lado direito / lado esquerdo)
+      Grupos: pernas | quadril | core | bracos | along | aquec
+   ===================================================================== */
+const EX = {
+  // ---- Aquecimento ----
+  w_pulsos:{nm:"Girar pulsos", pos:"pe", g:"aquec",
+    ins:"Em pé, braços estendidos à frente. Gire os punhos 2x para fora e 2x para dentro, sem parar."},
+  w_antebr:{nm:"Girar antebraços", pos:"pe", g:"aquec",
+    ins:"Em pé, braços à frente. Gire os antebraços 2x para dentro e 2x para fora, como se virasse maçanetas."},
+  w_bracos:{nm:"Girar braços", pos:"pe", g:"aquec",
+    ins:"Em pé, braços abertos para os lados. Faça círculos amplos: 2x para trás e 2x para frente."},
+  w_pernas:{nm:"Girar pernas", pos:"pe", g:"aquec",
+    ins:"Em pé (apoie-se se precisar). Levante um joelho e gire a perna 2x para fora e 2x para dentro; troque de perna."},
+  w_tronco:{nm:"Agachar e levantar tronco", pos:"pe", g:"aquec",
+    ins:"Em pé. Agache levando as mãos em direção ao chão e volte a levantar o tronco, em ritmo controlado."},
+  w_polich:{nm:"Polichinelo leve", pos:"pe", g:"aquec",
+    ins:"Salte abrindo pernas e levando os braços acima da cabeça, e volte. Ritmo leve, só para aquecer."},
+
+  // ---- Força ----
+  agach:{nm:"Agachamento", pos:"pe", g:"pernas",
+    ins:"Em pé, pés na largura dos ombros. Desça o quadril como se fosse sentar, até as coxas ficarem paralelas ao chão, e suba. Costas retas."},
+  agachSalto:{nm:"Agachamento com salto", pos:"pe", g:"pernas",
+    ins:"Em pé. Agache e, ao subir, salte para cima com força. Aterrisse suave, já descendo para o próximo."},
+  agachLat:{nm:"Agachamento lateral", pos:"pe", g:"pernas",
+    ins:"Em pé, pernas bem afastadas. Dobre um joelho descendo o quadril para aquele lado, a outra perna esticada. Alterne os lados."},
+  afundo:{nm:"Afundo (passada)", pos:"pe", g:"pernas",
+    ins:"Em pé. Dê um passo à frente e dobre os dois joelhos até o de trás quase tocar o chão. Volte e troque de perna, alternando."},
+  flexao:{nm:"Flexão de braço", pos:"prancha", g:"bracos",
+    ins:"De frente para o chão, mãos na largura dos ombros, corpo reto (prancha alta). Dobre os cotovelos descendo o peito e empurre para cima. Pode apoiar os joelhos."},
+  prancha:{nm:"Prancha", pos:"prancha", g:"core",
+    ins:"De frente para o chão, apoiado nos antebraços e nas pontas dos pés. Corpo reto como uma tábua, abdômen firme. Segure parado."},
+  pranchaLat:{nm:"Prancha lateral", pos:"prancha", g:"core", sides:true,
+    ins:"Deitado de lado, apoie um antebraço no chão. Eleve o quadril deixando o corpo reto na diagonal, apoiado no antebraço e no pé. Segure firme."},
+  escalada:{nm:"Escalada (montanhista)", pos:"prancha", g:"core",
+    ins:"De frente para o chão em prancha alta (mãos no chão, braços esticados). Leve os joelhos ao peito alternando, rápido, como se corresse no lugar."},
+  abdominal:{nm:"Abdominal", pos:"costas", g:"core",
+    ins:"Deite de costas (barriga para cima), joelhos dobrados, pés no chão, mãos na nuca. Suba o tronco contraindo o abdômen e desça devagar."},
+  superman:{nm:"Superman", pos:"frente", g:"core",
+    ins:"Deite de frente (barriga para baixo), braços estendidos à frente. Eleve braços, peito e pernas ao mesmo tempo, segure 1s e desça."},
+  ponte:{nm:"Elevação de quadril (ponte)", pos:"costas", g:"quadril",
+    ins:"Deite de costas (barriga para cima), joelhos dobrados, pés no chão. Eleve o quadril até o corpo ficar reto dos ombros aos joelhos e desça."},
+  levPernas:{nm:"Elevação de pernas", pos:"costas", g:"quadril",
+    ins:"Deite de costas (barriga para cima), pernas estendidas e juntas. Eleve as pernas até 90° e desça devagar, sem encostar os pés no chão."},
+
+  // ---- Alongamentos / mobilidade (final da série) ----
+  giroQuadril:{nm:"Giro de quadril", pos:"pe", g:"along",
+    ins:"Em pé, mãos na cintura, pés afastados. Faça círculos amplos com o quadril; troque a direção na metade do tempo."},
+  alongCostas:{nm:"Alongar as costas (gato–camelo)", pos:"quadru", g:"along",
+    ins:"Apoie mãos e joelhos no chão (quatro apoios). Arqueie as costas para cima olhando o umbigo, depois afunde a barriga levantando a cabeça. Alterne devagar."},
+  alongIsquio:{nm:"Alongar posterior das pernas", pos:"pe", g:"along",
+    ins:"Em pé, pernas quase juntas. Incline o tronco à frente com as costas retas e desça as mãos em direção aos pés, só até sentir o alongamento atrás das coxas."},
+  alongTronco:{nm:"Alongar lateral do tronco", pos:"pe", g:"along", sides:true,
+    ins:"Em pé, pés afastados. Levante um braço acima da cabeça e incline o tronco para o lado oposto, alongando a lateral do corpo. Segure."},
+  alongPeito:{nm:"Alongar peito e ombros", pos:"pe", g:"along",
+    ins:"Em pé, entrelace as mãos atrás das costas. Estenda os braços para trás e para baixo, abrindo o peito, e segure."},
+  downDog:{nm:"Cachorro olhando para baixo", pos:"pike", g:"along",
+    ins:"Apoie mãos e pés no chão e eleve o quadril formando um V invertido. Empurre o chão, mantendo pernas e costas o mais retas possível. Segure."},
+};
+
+/* =====================================================================
+   4) SÉRIES FIXAS por dia (Seg=1 … Dom=7).
+      2 aquecimentos + força + 2 alongamentos no fim.
+   ===================================================================== */
+// Cada série intercala PERNAS / POSTURA(core) / BRAÇOS(flexão), sem repetir
+// o mesmo tipo em sequência. Flexão: no máx. 2 por dia, espalhadas na semana
+// (Seg1 Ter2 Qua2 Qui1 Sex1 Sáb2 Dom1). Estrutura: 2 aquec. + 13 força + 2 along.
+const SERIES = {
+  1:{nome:"Série 1 — Pernas & Quadril", ex:[
+    "w_pernas","w_tronco",
+    "agach","prancha","agachLat","abdominal","afundo","escalada","ponte","flexao","levPernas","superman","agach","prancha","agachLat",
+    "giroQuadril","alongIsquio"]},
+  2:{nome:"Série 2 — Braços & Tronco", ex:[
+    "w_pulsos","w_bracos",
+    "prancha","agach","flexao","escalada","ponte","abdominal","agachLat","flexao","superman","afundo","pranchaLat","levPernas","escalada",
+    "alongPeito","alongTronco"]},
+  3:{nome:"Série 3 — Corpo Inteiro", ex:[
+    "w_bracos","w_pernas",
+    "agach","prancha","afundo","flexao","abdominal","agachLat","escalada","ponte","flexao","superman","levPernas","pranchaLat","agach",
+    "alongCostas","giroQuadril"]},
+  4:{nome:"Série 4 — Core & Estabilidade", ex:[
+    "w_tronco","w_pulsos",
+    "prancha","ponte","escalada","agach","abdominal","levPernas","superman","flexao","pranchaLat","agachLat","escalada","afundo","abdominal",
+    "alongCostas","downDog"]},
+  5:{nome:"Série 5 — Pernas & Explosão", ex:[
+    "w_pernas","w_polich",
+    "agachSalto","prancha","afundo","escalada","agachLat","abdominal","agach","flexao","agachSalto","superman","ponte","prancha","levPernas",
+    "alongIsquio","giroQuadril"]},
+  6:{nome:"Série 6 — Corpo Inteiro", ex:[
+    "w_bracos","w_tronco",
+    "prancha","agach","flexao","escalada","afundo","abdominal","agachLat","flexao","superman","ponte","pranchaLat","levPernas","escalada",
+    "downDog","alongTronco"]},
+  7:{nome:"Série 7 — Mobilidade Leve", ex:[
+    "w_pernas","w_bracos",
+    "agach","prancha","ponte","abdominal","agachLat","superman","afundo","flexao","escalada","ponte","prancha","levPernas","abdominal",
+    "alongCostas","alongPeito"]},
+};
+
+const DIAS = ["Seg","Ter","Qua","Qui","Sex","Sáb","Dom"];
+const TAGNAME = {pernas:"pernas",quadril:"quadril",core:"tronco",bracos:"braços",along:"along.",aquec:"aquec."};
+const TAGCLASS= {pernas:"t-pernas",quadril:"t-quadril",core:"t-core",bracos:"t-bracos",along:"t-along",aquec:"t-aquec"};
+
+/* =====================================================================
+   Util
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+let selDay = todayIdx();
+let audioCtx=null, wakeLock=null;
+
+function todayIdx(){ const d=new Date().getDay(); return d===0?6:d-1; } // 0=Seg..6=Dom
+function seriesFor(i){ return SERIES[i+1]; }
+
+// Expande exercícios de 2 lados em duas entradas separadas
+function expand(ids){
+  const out=[];
+  ids.forEach(id=>{
+    if(EX[id].sides){ out.push({id,side:"D"}); out.push({id,side:"E"}); }
+    else out.push({id,side:null});
+  });
+  return out;
+}
+function exName(it){ return EX[it.id].nm + (it.side? (it.side==="D"?" — lado direito":" — lado esquerdo") : ""); }
+function exIns(it){ return EX[it.id].ins + (it.side? (" Faça o lado "+(it.side==="D"?"direito.":"esquerdo.")) : ""); }
+
+function midGap(n){ return Math.floor((n-1)/2); }
+function totalSeconds(items){
+  const n=items.length; let t=n*WORK;
+  for(let i=0;i<n-1;i++) t += (i===midGap(n)?LONG:SHORT);
+  return t;
+}
+
+/* ---------- HOME ---------- */
+function renderDays(){
+  const box=$("days"); box.innerHTML="";
+  DIAS.forEach((d,i)=>{
+    const el=document.createElement("div");
+    el.className="day"+(i===selDay?" sel":"")+(i===todayIdx()?" today":"");
+    el.innerHTML=`<small>${d}</small><span>${i+1}</span>`;
+    el.onclick=()=>{ selDay=i; renderDays(); renderSelected(); };
+    box.appendChild(el);
+  });
+}
+function renderSelected(){
+  const s=seriesFor(selDay); const items=expand(s.ex);
+  $("selTitle").textContent=s.nome;
+  $("selMeta").textContent=`${items.length} exercícios · ~${Math.round(totalSeconds(items)/60)} min · ${WORK}s treino / ${SHORT}s descanso`;
+  const list=$("list"); list.innerHTML="";
+  items.forEach((it,i)=>{
+    const e=EX[it.id];
+    const el=document.createElement("div"); el.className="item";
+    el.innerHTML=`<div class="lead"><div class="idx">${i+1}</div><div class="mini">${svgIcon(e.pos)}</div></div>
+      <div class="body"><div class="nm">${exName(it)}</div><div class="ins">${exIns(it)}</div></div>
+      <div class="tag ${TAGCLASS[e.g]}">${TAGNAME[e.g]}</div>`;
+    list.appendChild(el);
+  });
+}
+function renderStreak(){ $("streakN").textContent=computeStreak(); }
+
+/* ---------- Sequência (localStorage) ---------- */
+function dateKey(d){ return d.toISOString().slice(0,10); }
+function getDone(){ try{ return JSON.parse(localStorage.getItem("treino_dias")||"[]"); }catch(e){ return []; } }
+function markToday(){ const k=dateKey(new Date()); const a=getDone(); if(!a.includes(k)){ a.push(k); localStorage.setItem("treino_dias",JSON.stringify(a)); } }
+function computeStreak(){
+  const set=new Set(getDone()); let s=0; const d=new Date();
+  if(!set.has(dateKey(d))) d.setDate(d.getDate()-1);
+  while(set.has(dateKey(d))){ s++; d.setDate(d.getDate()-1); }
+  return s;
+}
+
+/* =====================================================================
+   Motor do treino
+   ===================================================================== */
+let phases=[], pi=0, remaining=0, endAt=0, ticking=null, paused=false, beeped={};
+let runSeries=null, workCount=0;
+
+function buildPhases(items){
+  const p=[]; const n=items.length; const gap=midGap(n);
+  p.push({type:"ready", dur:READY});
+  for(let i=0;i<n;i++){
+    p.push({type:"work", dur:WORK, it:items[i], num:i+1, of:n});
+    if(i<n-1) p.push({type:(i===gap?"long":"short"), dur:(i===gap?LONG:SHORT)});
+  }
+  return p;
+}
+function startWorkout(){
+  runSeries=seriesFor(selDay);
+  const items=expand(runSeries.ex);
+  workCount=items.length;
+  phases=buildPhases(items); pi=0; paused=false;
+  ensureAudio(); requestWake();
+  $("runSeries").textContent=runSeries.nome.split("—")[0].trim();
+  $("pauseBtn").textContent="Pausar";
+  show("run"); enterPhase();
+}
+function enterPhase(){
+  const ph=phases[pi];
+  if(!ph){ finishWorkout(); return; }
+  beeped={}; remaining=ph.dur; endAt=Date.now()+ph.dur*1000;
+  paintPhase(ph); clearInterval(ticking); ticking=setInterval(tick,120); tick();
+}
+function paintPhase(ph){
+  const labels={ready:"Preparar",work:"Exercício",short:"Descanso curto",long:"Descanso longo"};
+  const colors={ready:"var(--accent)",work:"var(--work)",short:"var(--short)",long:"var(--long)"};
+  $("phaseLabel").textContent=labels[ph.type];
+  $("phaseLabel").style.color=colors[ph.type];
+  $("ring").style.stroke=colors[ph.type];
+
+  if(ph.type==="work"){
+    const e=EX[ph.it.id];
+    $("posIcon").innerHTML=svgIcon(e.pos);
+    $("posLabel").textContent=POSLABEL[e.pos]||"";
+    $("nowName").textContent=exName(ph.it);
+    $("nowIns").textContent=exIns(ph.it);
+    $("runProgress").textContent=`${ph.num} / ${ph.of}`;
+  } else {
+    $("posIcon").innerHTML="";
+    $("posLabel").textContent="";
+    if(ph.type==="ready"){ $("nowName").textContent="Prepare-se…"; $("nowIns").textContent="O treino vai começar."; }
+    else { $("nowName").textContent="Descanso"; $("nowIns").textContent = ph.type==="long"?"Respire fundo. Descanso longo no meio da série.":"Recupere o fôlego."; }
+  }
+  nextPreview();
+}
+function nextPreview(){
+  for(let j=pi+1;j<phases.length;j++){
+    if(phases[j].type==="work"){ $("nextEx").innerHTML=`Próximo: <b>${exName(phases[j].it)}</b>`; return; }
+  }
+  $("nextEx").innerHTML=`Próximo: <b>Fim do treino 🎉</b>`;
+}
+function tick(){
+  if(paused) return;
+  remaining=Math.max(0,(endAt-Date.now())/1000);
+  const secLeft=Math.ceil(remaining); const ph=phases[pi];
+  $("secs").textContent=secLeft;
+  $("secsSub").textContent = ph.type==="ready"?"prepare-se":"segundos";
+  const frac=Math.max(0,Math.min(1,remaining/ph.dur));
+  $("ring").style.strokeDashoffset=(282.74*(1-frac)).toFixed(1);
+  if(secLeft<=3 && secLeft>=1 && !beeped[secLeft]){ beeped[secLeft]=true; beep(660,0.09); }
+  if(remaining<=0){
+    clearInterval(ticking);
+    const nx=phases[pi+1];
+    if(nx && nx.type==="work") beep(880,0.18); else beep(440,0.14);
+    pi++; enterPhase();
+  }
+}
+function togglePause(){
+  paused=!paused; $("pauseBtn").textContent=paused?"Retomar":"Pausar";
+  if(paused){ clearInterval(ticking); } else { endAt=Date.now()+remaining*1000; ticking=setInterval(tick,120); }
+}
+function skip(){ clearInterval(ticking); beep(520,0.08); pi++; paused=false; $("pauseBtn").textContent="Pausar"; enterPhase(); }
+function quit(){ clearInterval(ticking); releaseWake(); show("home"); }
+
+function finishWorkout(){
+  clearInterval(ticking); releaseWake(); markToday();
+  const secs=totalSeconds(expand(runSeries.ex));
+  $("doneMin").textContent=Math.round(secs/60);
+  $("doneEx").textContent=workCount;
+  const st=computeStreak(); $("doneStreak").textContent=st;
+  $("doneMsg").textContent = st>1?`${st} dias seguidos. Continue assim!`:"Bom trabalho de hoje!";
+  fanfare(); show("done"); renderStreak();
+}
+
+/* ---------- Áudio ---------- */
+function ensureAudio(){
+  if(!audioCtx){ try{ audioCtx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
+  if(audioCtx && audioCtx.state==="suspended") audioCtx.resume();
+}
+function beep(freq,dur){
+  if(!audioCtx) return;
+  const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+  o.type="sine"; o.frequency.value=freq; o.connect(g); g.connect(audioCtx.destination);
+  const t=audioCtx.currentTime;
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.exponentialRampToValueAtTime(0.35,t+0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.start(t); o.stop(t+dur+0.02);
+}
+function fanfare(){ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,0.16),i*130)); }
+
+/* ---------- Wake Lock ---------- */
+async function requestWake(){ try{ if("wakeLock" in navigator) wakeLock=await navigator.wakeLock.request("screen"); }catch(e){} }
+function releaseWake(){ try{ wakeLock&&wakeLock.release(); wakeLock=null; }catch(e){} }
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible" && $("run").classList.contains("active")) requestWake(); });
+
+/* ---------- Navegação ---------- */
+function show(id){ document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active")); $(id).classList.add("active"); window.scrollTo(0,0); }
+
+$("startBtn").onclick=startWorkout;
+$("pauseBtn").onclick=togglePause;
+$("skipBtn").onclick=skip;
+$("quitBtn").onclick=quit;
+$("homeBtn").onclick=()=>{ show("home"); renderDays(); renderSelected(); };
+
+renderDays(); renderSelected(); renderStreak();
+
+/* ---------- PWA: service worker + botão instalar ---------- */
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+}
+let deferredPrompt=null;
+window.addEventListener("beforeinstallprompt",e=>{
+  e.preventDefault(); deferredPrompt=e;
+  const b=$("installBtn"); if(b) b.style.display="inline-block";
+});
+$("installBtn").onclick=async()=>{
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt(); await deferredPrompt.userChoice;
+  deferredPrompt=null; $("installBtn").style.display="none";
+};
+window.addEventListener("appinstalled",()=>{ const b=$("installBtn"); if(b) b.style.display="none"; });
+</script>
+</body>
+</html>
