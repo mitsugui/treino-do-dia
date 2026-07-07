@@ -40,6 +40,14 @@
   .streak b{color:var(--work)}
   .install-btn{display:none; border:1px solid var(--accent); background:#1c1a2e; color:#c0b3ff;
     padding:8px 12px; border-radius:12px; font-size:13px; font-weight:700; cursor:pointer}
+  .hist-btn{display:inline-block; border:1px solid #2f3644; background:var(--card); color:var(--muted);
+    padding:8px 12px; border-radius:12px; font-size:13px; font-weight:700; cursor:pointer}
+  .log-actions{display:flex; gap:8px; flex-wrap:wrap; padding:8px 16px 2px}
+  .log-actions button,.imp-btn{border:1px solid #2f3644; background:var(--card2); color:var(--text);
+    padding:10px 12px; border-radius:12px; font-size:13px; font-weight:700; cursor:pointer}
+  .imp-btn{display:inline-block}
+  .prep-tag{display:none; text-align:center; text-transform:uppercase; letter-spacing:1.6px;
+    font-size:11px; font-weight:800; color:var(--accent); margin-top:2px}
 
   .days{padding:8px 14px 4px; display:grid; grid-template-columns:repeat(7,1fr); gap:6px}
   .day{background:var(--card); border:1px solid #262b35; border-radius:12px; padding:9px 0; text-align:center; cursor:pointer; user-select:none}
@@ -115,6 +123,7 @@
       <p>Método sem equipamentos · pernas, tronco, quadril e braços</p>
       <div class="head-row">
         <div class="streak">🔥 Sequência: <b id="streakN">0</b>&nbsp;dias</div>
+        <button id="histBtn" class="hist-btn">📅 Histórico</button>
         <button id="installBtn" class="install-btn">⤓ Instalar app</button>
       </div>
     </header>
@@ -139,6 +148,7 @@
       </svg>
       <div class="ring-num"><div class="big" id="secs">40</div><div class="sub" id="secsSub">segundos</div></div>
     </div>
+    <div class="prep-tag" id="prepTag"></div>
     <div class="pos-icon" id="posIcon"></div>
     <div class="pos-label" id="posLabel"></div>
     <div class="now-name" id="nowName">—</div>
@@ -162,6 +172,21 @@
       <div class="stat"><b id="doneStreak">0</b><small>🔥 sequência</small></div>
     </div>
     <button class="primary" id="homeBtn" style="max-width:280px">Voltar ao início</button>
+  </section>
+
+  <!-- ===================== HISTÓRICO ===================== -->
+  <section id="log" class="screen">
+    <header class="home-head">
+      <h1>Histórico</h1>
+      <p id="logSummary">—</p>
+    </header>
+    <div class="log-actions">
+      <button id="expCsv">⤓ Exportar CSV</button>
+      <button id="expJson">⤓ Exportar JSON</button>
+      <label class="imp-btn">⤒ Importar<input type="file" id="impFile" accept="application/json,.json" hidden></label>
+    </div>
+    <div class="list" id="logList"></div>
+    <div class="cta"><button class="primary" id="logBack">Voltar</button></div>
   </section>
 
 </div>
@@ -260,6 +285,24 @@ const EX = {
     ins:"Deite de costas (barriga para cima), joelhos dobrados, pés no chão. Eleve o quadril até o corpo ficar reto dos ombros aos joelhos e desça."},
   levPernas:{nm:"Elevação de pernas", pos:"costas", g:"quadril",
     ins:"Deite de costas (barriga para cima), pernas estendidas e juntas. Eleve as pernas até 90° e desça devagar, sem encostar os pés no chão."},
+  agachSumo:{nm:"Agachamento sumô", pos:"pe", g:"pernas",
+    ins:"Em pé, pernas bem afastadas e pontas dos pés viradas para fora. Agache mantendo o tronco ereto e suba apertando os glúteos."},
+  afundoReverso:{nm:"Afundo reverso", pos:"pe", g:"pernas",
+    ins:"Em pé. Dê um passo para trás e dobre os dois joelhos até o de trás quase tocar o chão. Volte e alterne as pernas."},
+  panturrilha:{nm:"Elevação de panturrilha", pos:"pe", g:"pernas",
+    ins:"Em pé, pés na largura do quadril (apoie-se se precisar). Suba nas pontas dos pés o máximo que puder e desça devagar."},
+  bicicleta:{nm:"Abdominal bicicleta", pos:"costas", g:"core",
+    ins:"Deite de costas (barriga para cima), mãos na nuca e pernas no ar. Leve o cotovelo ao joelho oposto alternando, como se pedalasse."},
+  canivete:{nm:"Canivete (V-up)", pos:"costas", g:"core",
+    ins:"Deite de costas (barriga para cima), braços estendidos atrás da cabeça. Suba tronco e pernas ao mesmo tempo tentando tocar os pés (corpo em V) e desça devagar."},
+  pranchaToque:{nm:"Prancha com toque no ombro", pos:"prancha", g:"core",
+    ins:"Em prancha alta (mãos no chão, braços esticados, corpo reto). Toque uma mão no ombro oposto sem balançar o quadril; alterne as mãos."},
+  deadbug:{nm:"Inseto morto", pos:"costas", g:"core",
+    ins:"Deite de costas (barriga para cima), braços apontando para o teto e joelhos dobrados a 90°. Estenda o braço e a perna opostos quase até o chão e volte; alterne."},
+  flexaoDiamante:{nm:"Flexão diamante", pos:"prancha", g:"bracos",
+    ins:"De frente para o chão, mãos juntas embaixo do peito formando um losango. Dobre os cotovelos rente ao corpo e empurre (foco no tríceps). Pode apoiar os joelhos."},
+  flexaoPique:{nm:"Flexão pique (ombros)", pos:"pike", g:"bracos",
+    ins:"Comece no 'cachorro olhando para baixo' (quadril alto, V invertido). Dobre os cotovelos levando a cabeça em direção ao chão e empurre de volta. Foco nos ombros."},
 
   // ---- Alongamentos / mobilidade (final da série) ----
   giroQuadril:{nm:"Giro de quadril", pos:"pe", g:"along",
@@ -286,31 +329,31 @@ const EX = {
 const SERIES = {
   1:{nome:"Série 1 — Pernas & Quadril", ex:[
     "w_pernas","w_tronco",
-    "agach","prancha","agachLat","abdominal","afundo","escalada","ponte","flexao","levPernas","superman","agach","prancha","agachLat",
+    "agach","prancha","agachLat","abdominal","afundo","escalada","ponte","flexao","levPernas","superman","agachSumo","bicicleta","afundoReverso",
     "giroQuadril","alongIsquio"]},
   2:{nome:"Série 2 — Braços & Tronco", ex:[
     "w_pulsos","w_bracos",
-    "prancha","agach","flexao","escalada","ponte","abdominal","agachLat","flexao","superman","afundo","pranchaLat","levPernas","escalada",
+    "prancha","agach","flexao","escalada","ponte","abdominal","agachLat","flexaoDiamante","superman","afundo","pranchaLat","levPernas","pranchaToque",
     "alongPeito","alongTronco"]},
   3:{nome:"Série 3 — Corpo Inteiro", ex:[
     "w_bracos","w_pernas",
-    "agach","prancha","afundo","flexao","abdominal","agachLat","escalada","ponte","flexao","superman","levPernas","pranchaLat","agach",
+    "agach","prancha","afundo","flexao","abdominal","agachLat","escalada","ponte","flexaoPique","superman","levPernas","pranchaLat","agachSalto",
     "alongCostas","giroQuadril"]},
   4:{nome:"Série 4 — Core & Estabilidade", ex:[
     "w_tronco","w_pulsos",
-    "prancha","ponte","escalada","agach","abdominal","levPernas","superman","flexao","pranchaLat","agachLat","escalada","afundo","abdominal",
+    "prancha","ponte","escalada","agach","abdominal","levPernas","superman","flexao","pranchaLat","agachLat","canivete","afundo","pranchaToque",
     "alongCostas","downDog"]},
   5:{nome:"Série 5 — Pernas & Explosão", ex:[
     "w_pernas","w_polich",
-    "agachSalto","prancha","afundo","escalada","agachLat","abdominal","agach","flexao","agachSalto","superman","ponte","prancha","levPernas",
+    "agachSalto","prancha","afundo","escalada","agachLat","abdominal","agach","flexao","ponte","superman","levPernas","bicicleta","afundoReverso",
     "alongIsquio","giroQuadril"]},
   6:{nome:"Série 6 — Corpo Inteiro", ex:[
     "w_bracos","w_tronco",
-    "prancha","agach","flexao","escalada","afundo","abdominal","agachLat","flexao","superman","ponte","pranchaLat","levPernas","escalada",
+    "prancha","agach","flexao","escalada","afundo","abdominal","agachLat","flexaoDiamante","superman","ponte","pranchaLat","levPernas","deadbug",
     "downDog","alongTronco"]},
   7:{nome:"Série 7 — Mobilidade Leve", ex:[
     "w_pernas","w_bracos",
-    "agach","prancha","ponte","abdominal","agachLat","superman","afundo","flexao","escalada","ponte","prancha","levPernas","abdominal",
+    "agach","prancha","ponte","abdominal","agachLat","superman","afundo","flexao","escalada","levPernas","bicicleta","panturrilha","deadbug",
     "alongCostas","alongPeito"]},
 };
 
@@ -374,15 +417,81 @@ function renderSelected(){
 }
 function renderStreak(){ $("streakN").textContent=computeStreak(); }
 
-/* ---------- Sequência (localStorage) ---------- */
+/* ---------- Log de treinos (localStorage — persiste entre atualizações) ----------
+   Guarda um registro por treino concluído. Exportável em CSV/JSON e importável. */
+const LOG_KEY="treino_log_v1";
 function dateKey(d){ return d.toISOString().slice(0,10); }
-function getDone(){ try{ return JSON.parse(localStorage.getItem("treino_dias")||"[]"); }catch(e){ return []; } }
-function markToday(){ const k=dateKey(new Date()); const a=getDone(); if(!a.includes(k)){ a.push(k); localStorage.setItem("treino_dias",JSON.stringify(a)); } }
+function loadLog(){
+  try{ const v=JSON.parse(localStorage.getItem(LOG_KEY)); if(Array.isArray(v)) return v; }catch(e){}
+  // migra o formato antigo (lista de datas) sem perder histórico
+  try{
+    const old=JSON.parse(localStorage.getItem("treino_dias")||"[]");
+    if(Array.isArray(old) && old.length){
+      const mig=old.map(d=>({date:d, ts:d, dia:null, serie:null, min:null, ex:null}));
+      localStorage.setItem(LOG_KEY, JSON.stringify(mig)); return mig;
+    }
+  }catch(e){}
+  return [];
+}
+function saveLog(log){
+  localStorage.setItem(LOG_KEY, JSON.stringify(log));
+  try{ localStorage.setItem("treino_dias", JSON.stringify(Array.from(new Set(log.map(r=>r.date))))); }catch(e){}
+}
+function logWorkout(dia, serie, min, ex){
+  const now=new Date(); const log=loadLog();
+  log.push({date:dateKey(now), ts:now.toISOString(), dia, serie, min, ex});
+  saveLog(log);
+}
+function doneDates(){ return Array.from(new Set(loadLog().map(r=>r.date))); }
 function computeStreak(){
-  const set=new Set(getDone()); let s=0; const d=new Date();
+  const set=new Set(doneDates()); let s=0; const d=new Date();
   if(!set.has(dateKey(d))) d.setDate(d.getDate()-1);
   while(set.has(dateKey(d))){ s++; d.setDate(d.getDate()-1); }
   return s;
+}
+
+/* ---------- Exportar / importar o log ---------- */
+function download(name, text, mime){
+  const blob=new Blob([text],{type:mime||"text/plain"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a"); a.href=url; a.download=name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function exportCSV(){
+  const log=loadLog();
+  const rows=[["data","dia_semana","serie","minutos","exercicios","horario"]];
+  log.forEach(r=>rows.push([r.date, r.dia??"", r.serie??"", r.min??"", r.ex??"", r.ts??""]));
+  const csv=rows.map(c=>c.map(v=>/[",\n;]/.test(String(v))?'"'+String(v).replace(/"/g,'""')+'"':v).join(",")).join("\r\n");
+  download("treino-historico.csv", "﻿"+csv, "text/csv;charset=utf-8");
+}
+function exportJSON(){ download("treino-historico.json", JSON.stringify(loadLog(),null,2), "application/json"); }
+function importJSON(file){
+  const rd=new FileReader();
+  rd.onload=()=>{
+    try{
+      const arr=JSON.parse(rd.result); if(!Array.isArray(arr)) throw 0;
+      const log=loadLog(); const seen=new Set(log.map(r=>(r.ts||"")+"|"+(r.date||"")));
+      let add=0;
+      arr.forEach(r=>{ const k=(r.ts||"")+"|"+(r.date||""); if(r.date && !seen.has(k)){ seen.add(k); log.push(r); add++; } });
+      log.sort((a,b)=>String(a.ts).localeCompare(String(b.ts)));
+      saveLog(log); renderLog(); renderStreak();
+      alert("Importado: "+add+" novo(s) registro(s). Total: "+log.length+".");
+    }catch(e){ alert("Arquivo inválido. Selecione um JSON exportado por este app."); }
+  };
+  rd.readAsText(file);
+}
+function renderLog(){
+  const log=loadLog().slice().sort((a,b)=>String(b.ts).localeCompare(String(a.ts)));
+  $("logSummary").textContent=`${log.length} treinos · ${doneDates().length} dias · sequência ${computeStreak()} 🔥`;
+  const box=$("logList"); box.innerHTML="";
+  if(!log.length){ box.innerHTML='<div class="item"><div class="body"><div class="ins">Nenhum treino registrado ainda.</div></div></div>'; return; }
+  log.forEach(r=>{
+    const d=r.date? r.date.split("-").reverse().join("/") : "—";
+    const el=document.createElement("div"); el.className="item";
+    el.innerHTML=`<div class="body"><div class="nm">${d}</div><div class="ins">${r.serie||"Treino"}${r.min?` · ${r.min} min`:""}${r.ex?` · ${r.ex} ex.`:""}</div></div>`;
+    box.appendChild(el);
+  });
 }
 
 /* =====================================================================
@@ -416,6 +525,7 @@ function enterPhase(){
   beeped={}; remaining=ph.dur; endAt=Date.now()+ph.dur*1000;
   paintPhase(ph); clearInterval(ticking); ticking=setInterval(tick,120); tick();
 }
+function nextWorkPhase(){ for(let j=pi+1;j<phases.length;j++) if(phases[j].type==="work") return phases[j]; return null; }
 function paintPhase(ph){
   const labels={ready:"Preparar",work:"Exercício",short:"Descanso curto",long:"Descanso longo"};
   const colors={ready:"var(--accent)",work:"var(--work)",short:"var(--short)",long:"var(--long)"};
@@ -425,18 +535,29 @@ function paintPhase(ph){
 
   if(ph.type==="work"){
     const e=EX[ph.it.id];
+    $("prepTag").style.display="none";
     $("posIcon").innerHTML=svgIcon(e.pos);
     $("posLabel").textContent=POSLABEL[e.pos]||"";
     $("nowName").textContent=exName(ph.it);
     $("nowIns").textContent=exIns(ph.it);
     $("runProgress").textContent=`${ph.num} / ${ph.of}`;
+    nextPreview();
   } else {
-    $("posIcon").innerHTML="";
-    $("posLabel").textContent="";
-    if(ph.type==="ready"){ $("nowName").textContent="Prepare-se…"; $("nowIns").textContent="O treino vai começar."; }
-    else { $("nowName").textContent="Descanso"; $("nowIns").textContent = ph.type==="long"?"Respire fundo. Descanso longo no meio da série.":"Recupere o fôlego."; }
+    // Descanso / preparação: mostra o PRÓXIMO exercício por inteiro (nome + descrição)
+    const nw=nextWorkPhase();
+    $("prepTag").style.display="block";
+    $("prepTag").textContent = ph.type==="ready" ? "Comece com" : "A seguir";
+    if(nw){
+      const e=EX[nw.it.id];
+      $("posIcon").innerHTML=svgIcon(e.pos);
+      $("posLabel").textContent=POSLABEL[e.pos]||"";
+      $("nowName").textContent=exName(nw.it);
+      $("nowIns").textContent=exIns(nw.it);
+      $("runProgress").textContent=`próximo: ${nw.num} / ${nw.of}`;
+    }
+    $("nextEx").innerHTML = ph.type==="long" ? "Descanso longo — respire fundo"
+                          : ph.type==="short" ? "Aproveite para se posicionar" : "&nbsp;";
   }
-  nextPreview();
 }
 function nextPreview(){
   for(let j=pi+1;j<phases.length;j++){
@@ -468,9 +589,11 @@ function skip(){ clearInterval(ticking); beep(520,0.08); pi++; paused=false; $("
 function quit(){ clearInterval(ticking); releaseWake(); show("home"); }
 
 function finishWorkout(){
-  clearInterval(ticking); releaseWake(); markToday();
+  clearInterval(ticking); releaseWake();
   const secs=totalSeconds(expand(runSeries.ex));
-  $("doneMin").textContent=Math.round(secs/60);
+  const min=Math.round(secs/60);
+  logWorkout(selDay+1, runSeries.nome, min, workCount);
+  $("doneMin").textContent=min;
   $("doneEx").textContent=workCount;
   const st=computeStreak(); $("doneStreak").textContent=st;
   $("doneMsg").textContent = st>1?`${st} dias seguidos. Continue assim!`:"Bom trabalho de hoje!";
@@ -506,7 +629,14 @@ $("startBtn").onclick=startWorkout;
 $("pauseBtn").onclick=togglePause;
 $("skipBtn").onclick=skip;
 $("quitBtn").onclick=quit;
-$("homeBtn").onclick=()=>{ show("home"); renderDays(); renderSelected(); };
+$("homeBtn").onclick=()=>{ show("home"); renderDays(); renderSelected(); renderStreak(); };
+
+/* Histórico / exportação */
+$("histBtn").onclick=()=>{ renderLog(); show("log"); };
+$("logBack").onclick=()=>{ show("home"); renderDays(); renderSelected(); renderStreak(); };
+$("expCsv").onclick=exportCSV;
+$("expJson").onclick=exportJSON;
+$("impFile").onchange=(e)=>{ if(e.target.files[0]) importJSON(e.target.files[0]); e.target.value=""; };
 
 renderDays(); renderSelected(); renderStreak();
 
