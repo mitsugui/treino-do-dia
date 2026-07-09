@@ -1,6 +1,6 @@
 /* Service worker do "Treino do Dia".
    Ao mudar arquivos, suba a versão (treino-vN) para forçar atualização. */
-const CACHE = 'treino-v3';
+const CACHE = 'treino-v4';
 const ASSETS = [
   './',
   './index.html',

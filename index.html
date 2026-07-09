@@ -46,6 +46,9 @@
   .log-actions button,.imp-btn{border:1px solid #2f3644; background:var(--card2); color:var(--text);
     padding:10px 12px; border-radius:12px; font-size:13px; font-weight:700; cursor:pointer}
   .imp-btn{display:inline-block}
+  .vol-wrap{display:inline-flex; align-items:center; gap:8px; background:var(--card);
+    border:1px solid #262b35; padding:6px 12px; border-radius:12px; font-size:14px}
+  .vol-wrap input{width:96px; accent-color:var(--work)}
   .prep-tag{display:none; text-align:center; text-transform:uppercase; letter-spacing:1.6px;
     font-size:11px; font-weight:800; color:var(--accent); margin-top:2px}
 
@@ -125,6 +128,12 @@
         <div class="streak">🔥 Sequência: <b id="streakN">0</b>&nbsp;dias</div>
         <button id="histBtn" class="hist-btn">📅 Histórico</button>
         <button id="installBtn" class="install-btn">⤓ Instalar app</button>
+      </div>
+      <div class="head-row">
+        <button id="musicBtn" class="hist-btn">🎵 Música</button>
+        <button id="musicEdit" class="hist-btn" title="Trocar a playlist">✎</button>
+        <div class="vol-wrap">🔊<input id="vol" type="range" min="0" max="2" step="0.1"></div>
+        <button id="testSnd" class="hist-btn">Testar som</button>
       </div>
     </header>
     <div class="days" id="days"></div>
@@ -325,35 +334,35 @@ const EX = {
    ===================================================================== */
 // Cada série intercala PERNAS / POSTURA(core) / BRAÇOS(flexão), sem repetir
 // o mesmo tipo em sequência. Flexão: no máx. 2 por dia, espalhadas na semana
-// (Seg1 Ter2 Qua2 Qui1 Sex1 Sáb2 Dom1). Estrutura: 2 aquec. + 13 força + 2 along.
+// (Seg1 Ter2 Qua2 Qui1 Sex1 Sáb2 Dom1). Estrutura: 2 aquec. + 11 força + 2 along.
 const SERIES = {
   1:{nome:"Série 1 — Pernas & Quadril", ex:[
     "w_pernas","w_tronco",
-    "agach","prancha","agachLat","abdominal","afundo","escalada","ponte","flexao","levPernas","superman","agachSumo","bicicleta","afundoReverso",
+    "agach","prancha","agachLat","abdominal","afundo","escalada","ponte","flexao","levPernas","superman","agachSumo",
     "giroQuadril","alongIsquio"]},
   2:{nome:"Série 2 — Braços & Tronco", ex:[
     "w_pulsos","w_bracos",
-    "prancha","agach","flexao","escalada","ponte","abdominal","agachLat","flexaoDiamante","superman","afundo","pranchaLat","levPernas","pranchaToque",
+    "prancha","agach","flexao","escalada","ponte","abdominal","agachLat","flexaoDiamante","superman","afundo","pranchaLat",
     "alongPeito","alongTronco"]},
   3:{nome:"Série 3 — Corpo Inteiro", ex:[
     "w_bracos","w_pernas",
-    "agach","prancha","afundo","flexao","abdominal","agachLat","escalada","ponte","flexaoPique","superman","levPernas","pranchaLat","agachSalto",
+    "agach","prancha","afundo","flexao","abdominal","agachLat","escalada","ponte","flexaoPique","superman","levPernas",
     "alongCostas","giroQuadril"]},
   4:{nome:"Série 4 — Core & Estabilidade", ex:[
     "w_tronco","w_pulsos",
-    "prancha","ponte","escalada","agach","abdominal","levPernas","superman","flexao","pranchaLat","agachLat","canivete","afundo","pranchaToque",
+    "prancha","ponte","escalada","agach","abdominal","levPernas","superman","flexao","pranchaLat","agachLat","canivete",
     "alongCostas","downDog"]},
   5:{nome:"Série 5 — Pernas & Explosão", ex:[
     "w_pernas","w_polich",
-    "agachSalto","prancha","afundo","escalada","agachLat","abdominal","agach","flexao","ponte","superman","levPernas","bicicleta","afundoReverso",
+    "agachSalto","prancha","afundo","escalada","agachLat","abdominal","agach","flexao","ponte","superman","levPernas",
     "alongIsquio","giroQuadril"]},
   6:{nome:"Série 6 — Corpo Inteiro", ex:[
     "w_bracos","w_tronco",
-    "prancha","agach","flexao","escalada","afundo","abdominal","agachLat","flexaoDiamante","superman","ponte","pranchaLat","levPernas","deadbug",
+    "prancha","agach","flexao","escalada","afundo","abdominal","agachLat","flexaoDiamante","superman","ponte","pranchaLat",
     "downDog","alongTronco"]},
   7:{nome:"Série 7 — Mobilidade Leve", ex:[
     "w_pernas","w_bracos",
-    "agach","prancha","ponte","abdominal","agachLat","superman","afundo","flexao","escalada","levPernas","bicicleta","panturrilha","deadbug",
+    "agach","prancha","ponte","abdominal","agachLat","superman","afundo","flexao","escalada","levPernas","bicicleta",
     "alongCostas","alongPeito"]},
 };
 
@@ -366,7 +375,11 @@ const TAGCLASS= {pernas:"t-pernas",quadril:"t-quadril",core:"t-core",bracos:"t-b
    ===================================================================== */
 const $ = id => document.getElementById(id);
 let selDay = todayIdx();
-let audioCtx=null, wakeLock=null;
+let audioCtx=null, masterGain=null, wakeLock=null;
+
+const VOL_KEY="treino_volume";
+const MUSIC_KEY="treino_musica";
+let vol = (()=>{ const v=parseFloat(localStorage.getItem(VOL_KEY)); return isNaN(v)?1.2:v; })();
 
 function todayIdx(){ const d=new Date().getDay(); return d===0?6:d-1; } // 0=Seg..6=Dom
 function seriesFor(i){ return SERIES[i+1]; }
@@ -573,11 +586,11 @@ function tick(){
   $("secsSub").textContent = ph.type==="ready"?"prepare-se":"segundos";
   const frac=Math.max(0,Math.min(1,remaining/ph.dur));
   $("ring").style.strokeDashoffset=(282.74*(1-frac)).toFixed(1);
-  if(secLeft<=3 && secLeft>=1 && !beeped[secLeft]){ beeped[secLeft]=true; beep(660,0.09); }
+  if(secLeft<=2 && secLeft>=1 && !beeped[secLeft]){ beeped[secLeft]=true; bip(); }
   if(remaining<=0){
     clearInterval(ticking);
     const nx=phases[pi+1];
-    if(nx && nx.type==="work") beep(880,0.18); else beep(440,0.14);
+    bipFinal(!!nx && nx.type==="work");
     pi++; enterPhase();
   }
 }
@@ -585,7 +598,7 @@ function togglePause(){
   paused=!paused; $("pauseBtn").textContent=paused?"Retomar":"Pausar";
   if(paused){ clearInterval(ticking); } else { endAt=Date.now()+remaining*1000; ticking=setInterval(tick,120); }
 }
-function skip(){ clearInterval(ticking); beep(520,0.08); pi++; paused=false; $("pauseBtn").textContent="Pausar"; enterPhase(); }
+function skip(){ clearInterval(ticking); tone(700,0.08); pi++; paused=false; $("pauseBtn").textContent="Pausar"; enterPhase(); }
 function quit(){ clearInterval(ticking); releaseWake(); show("home"); }
 
 function finishWorkout(){
@@ -600,22 +613,39 @@ function finishWorkout(){
   fanfare(); show("done"); renderStreak();
 }
 
-/* ---------- Áudio ---------- */
+/* ---------- Áudio: "pi-pi-piii" (2 bipes curtos + 1 longo no fim do tempo) ----------
+   Onda quadrada e frequência aguda: atravessa melhor a música e o alto-falante do celular.
+   O volume fica salvo no aparelho e passa por um compressor para não distorcer no máximo. */
 function ensureAudio(){
-  if(!audioCtx){ try{ audioCtx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
+  if(!audioCtx){
+    try{
+      audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+      masterGain=audioCtx.createGain(); masterGain.gain.value=vol;
+      const comp=audioCtx.createDynamicsCompressor();
+      masterGain.connect(comp); comp.connect(audioCtx.destination);
+    }catch(e){}
+  }
   if(audioCtx && audioCtx.state==="suspended") audioCtx.resume();
 }
-function beep(freq,dur){
-  if(!audioCtx) return;
+function tone(freq,dur,delay,type){
+  if(!audioCtx || !masterGain) return;
+  const t=audioCtx.currentTime+(delay||0);
   const o=audioCtx.createOscillator(), g=audioCtx.createGain();
-  o.type="sine"; o.frequency.value=freq; o.connect(g); g.connect(audioCtx.destination);
-  const t=audioCtx.currentTime;
+  o.type=type||"square"; o.frequency.setValueAtTime(freq,t);
+  o.connect(g); g.connect(masterGain);
   g.gain.setValueAtTime(0.0001,t);
-  g.gain.exponentialRampToValueAtTime(0.35,t+0.01);
+  g.gain.exponentialRampToValueAtTime(0.9,t+0.008);
+  g.gain.setValueAtTime(0.9,t+dur*0.65);
   g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
-  o.start(t); o.stop(t+dur+0.02);
+  o.start(t); o.stop(t+dur+0.03);
 }
-function fanfare(){ [523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,0.16),i*130)); }
+function bip(){ tone(1175,0.11); }                          // "pi" — faltam 2 s e 1 s
+function bipFinal(paraExercicio){                            // "piii" — acabou o tempo
+  tone(paraExercicio?1568:988, 0.55);                        // agudo entra no exercício, grave no descanso
+}
+function fanfare(){ [784,988,1175,1568].forEach((f,i)=>tone(f,0.18,i*0.14)); }
+function testSound(){ ensureAudio(); bip(); tone(1175,0.11,0.30); tone(1568,0.55,0.60); }
+function setVol(v){ vol=v; localStorage.setItem(VOL_KEY,String(v)); if(masterGain) masterGain.gain.value=v; }
 
 /* ---------- Wake Lock ---------- */
 async function requestWake(){ try{ if("wakeLock" in navigator) wakeLock=await navigator.wakeLock.request("screen"); }catch(e){} }
@@ -630,6 +660,24 @@ $("pauseBtn").onclick=togglePause;
 $("skipBtn").onclick=skip;
 $("quitBtn").onclick=quit;
 $("homeBtn").onclick=()=>{ show("home"); renderDays(); renderSelected(); renderStreak(); };
+
+/* Som: volume salvo no aparelho + botão de teste */
+$("vol").value=vol;
+$("vol").oninput=()=>{ ensureAudio(); setVol(parseFloat($("vol").value)); };
+$("vol").onchange=()=>{ ensureAudio(); bip(); };
+$("testSnd").onclick=testSound;
+
+/* Música: abre uma playlist fixa (YouTube Music, Spotify, o que for).
+   O navegador não consegue dar play sozinho em outro app — abre a playlist e
+   você toca em ▶ uma vez; depois volte para cá e inicie o treino. */
+function musicUrl(){ return localStorage.getItem(MUSIC_KEY)||""; }
+function askMusic(){
+  const u=prompt("Link da playlist (YouTube Music, Spotify…):", musicUrl()||"https://music.youtube.com/playlist?list=");
+  if(u===null) return musicUrl();
+  const v=u.trim(); localStorage.setItem(MUSIC_KEY,v); return v;
+}
+$("musicBtn").onclick=()=>{ const u=musicUrl()||askMusic(); if(u) window.open(u,"_blank","noopener"); };
+$("musicEdit").onclick=askMusic;
 
 /* Histórico / exportação */
 $("histBtn").onclick=()=>{ renderLog(); show("log"); };

@@ -6,12 +6,19 @@ exercício e descanso. Funciona offline e pode ser instalado na tela inicial.
 ## Como funciona
 
 - **Séries fixas por dia da semana** (Segunda = Série 1 … Domingo = Série 7).
-- Cada série: 2 aquecimentos + força intercalando **pernas / postura (core) / braços**
-  + 2 alongamentos no fim.
+- Cada série: 2 aquecimentos + 11 exercícios de força intercalando
+  **pernas / postura (core) / braços** + 2 alongamentos no fim (~14 a 16 min).
 - Timers: **40 s** de exercício, **15 s** de descanso curto e **30 s** de descanso
   longo no meio da série.
-- Ícone de posição do corpo em cada exercício, beeps de contagem, tela mantida
-  ligada durante o treino, contador de sequência de dias e "Parabéns" no fim.
+- Aviso sonoro **"pi-pi-piii"**: dois bipes curtos faltando 2 s e 1 s, e um bipe
+  longo no fim do tempo (agudo = entra exercício, grave = entra descanso).
+  Volume ajustável na tela inicial (fica salvo) e botão **Testar som**.
+- Botão **🎵 Música** abre uma playlist fixa à sua escolha (o link fica salvo no
+  aparelho). O navegador não pode dar play sozinho em outro app: abra a playlist,
+  toque em ▶ e volte para o treino.
+- Ícone de posição do corpo em cada exercício, descrição do próximo exercício
+  durante o descanso, tela mantida ligada durante o treino, contador de sequência
+  de dias, histórico exportável (CSV/JSON) e "Parabéns" no fim.
 
 ## Uso
 
