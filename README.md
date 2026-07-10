@@ -10,9 +10,10 @@ exercício e descanso. Funciona offline e pode ser instalado na tela inicial.
   **pernas / postura (core) / braços** + 2 alongamentos no fim (~14 a 16 min).
 - Timers: **40 s** de exercício, **15 s** de descanso curto e **30 s** de descanso
   longo no meio da série.
-- Aviso sonoro **"pi-pi-piii"**: dois bipes curtos faltando 2 s e 1 s, e um bipe
-  longo no fim do tempo (agudo = entra exercício, grave = entra descanso).
-  Volume ajustável na tela inicial (fica salvo) e botão **Testar som**.
+- Aviso sonoro **"pi-pi-pi-piii"**: três bipes curtos faltando 3 s, 2 s e 1 s, e
+  um bipe longo no fim do tempo (agudo = entra exercício, grave = entra descanso).
+  Timbre suave (onda triangular). Volume ajustável na tela inicial (fica salvo)
+  e botão **Testar som**.
 - Botão **🎵 Música** abre uma playlist fixa à sua escolha (o link fica salvo no
   aparelho). O navegador não pode dar play sozinho em outro app: abra a playlist,
   toque em ▶ e volte para o treino.
